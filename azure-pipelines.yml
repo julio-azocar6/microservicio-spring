@@ -1,0 +1,72 @@
+# Gradle  +56 9 4434 7226 issbette
+# Build your Java project and run tests with Gradle using a Gradle wrapper script.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+- feature-ms-julioazocar-mensaje
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: |
+      git fetch --unshallow
+  displayName: 'convert to non-shallow clone' 
+
+- task: Gradle@3
+  inputs:
+      gradleWrapperFile: 'gradlew'
+      tasks: 'build'
+      publishJUnitResults: true
+      javaHomeOption: 'JDKVersion'
+      sonarQubeRunAnalysis: false
+      spotBugsAnalysis: false
+  displayName: Build
+- task: SonarCloudPrepare@1
+  inputs:
+    SonarCloud: 'SonarCloud'
+    organization: 'julioazocar-1'
+    projectKey: 'julioazocar-1_microservicio-spring-5'
+    projectName: 'microservicio-spring-5'
+  displayName: 'SonarCloud Prepare'
+  
+- task: Gradle@3
+  displayName: 'Run test'
+  inputs:
+    gradleWrapperFile: 'gradlew'
+    workingDirectory: '$(Build.SourcesDirectory)'
+    publishJUnitResults: true
+    testResultsFiles: '**/TEST-*.xml'
+    javaHomeOption: 'JDKVersion'
+    sonarQubeRunAnalysis: false
+    spotBugsAnalysis: false
+
+- task: Gradle@3
+  inputs:
+    gradleWrapperFile: 'gradlew'
+    tasks: 'sonar'
+    publishJUnitResults: false
+    javaHomeOption: 'JDKVersion'
+    sonarQubeRunAnalysis: true
+    sqGradlePluginVersionChoice: 'specify'
+    sonarQubeGradlePluginVersion: '3.3'
+    spotBugsAnalysis: false
+ 
+- task: Docker@2
+  inputs:
+      containerRegistry: 'Docker'
+      command: 'login'
+  
+- task: Docker@2
+  inputs:
+      containerRegistry: 'Docker'
+      repository: 'julinf/microservicio-spring'
+      command: 'build'
+      Dockerfile: '**/Dockerfile'
+  
+- task: Docker@2
+  inputs:
+    containerRegistry: 'Docker'
+    repository: 'julinf/microservicio-spring'
+    command: 'push'

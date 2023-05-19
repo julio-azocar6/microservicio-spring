@@ -2,11 +2,22 @@ plugins {
 	id 'org.springframework.boot' version '2.6.3'
 	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 	id 'java'
+	id 'jacoco'
 }
+
+apply plugin: 'java'
+
+
+jacoco {
+	toolVersion = "0.8.8"
+	reportsDirectory = file("$buildDir/jacoco") // Directorio de destino para el informe HTML
+}
+
+
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '1.8'
+sourceCompatibility = '11'
 
 repositories {
 	mavenCentral()
@@ -15,8 +26,30 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation('org.springframework.boot:spring-boot-starter-test')
+	
 }
 
 test {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+	jacoco.includeNoLocationClasses = true
+	jacoco.excludes = ['jdk.internal.*']
+	jacoco.includes = []	
+}
+
+
+jacocoTestReport  {
+	dependsOn test
+	reports {
+		html.enabled = true // Habilitar informe HTML
+		xml.enabled = true // Habilitar informe XML
+		csv.enabled = false // Deshabilitar informe CSV
+	}
+
+	
+
+	classDirectories.setFrom(files(sourceSets.main.output.classesDirs))
+	sourceDirectories.setFrom(files(sourceSets.main.allSource.srcDirs))
+	executionData.setFrom(files("${buildDir}/jacoco/test.exec"))
+	
 }
